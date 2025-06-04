@@ -1,0 +1,2125 @@
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar} from 'recharts';
+import { 
+  Building2, 
+  TrendingUp, 
+  Leaf, 
+  Map, 
+  Users, 
+  Bell, 
+  Search, 
+  Filter,
+  ChevronDown,
+  User,
+  Settings,
+  LogOut,
+  DollarSign,
+  Percent,
+  Home,
+  Zap,
+  Calendar,
+  AlertTriangle,
+  CheckCircle,
+  FileText
+} from 'lucide-react';
+
+// Mock Data
+const mockKpiData = {
+  occupancyRate: 87.5,
+  rentalIncome: 245.8,
+  assetValue: 2700,
+  esgScore: 72
+};
+
+const mockForecastData = [
+  { month: 'Jan 24', actual: 240, predicted: null },
+  { month: 'Feb 24', actual: 242, predicted: null },
+  { month: 'Mar 24', actual: 245, predicted: null },
+  { month: 'Apr 24', actual: 243, predicted: null },
+  { month: 'May 24', actual: 246, predicted: null },
+  { month: 'Jun 24', actual: null, predicted: 248 },
+  { month: 'Jul 24', actual: null, predicted: 251 },
+  { month: 'Aug 24', actual: null, predicted: 254 },
+  { month: 'Sep 24', actual: null, predicted: 257 },
+  { month: 'Oct 24', actual: null, predicted: 260 },
+  { month: 'Nov 24', actual: null, predicted: 263 },
+  { month: 'Dec 24', actual: null, predicted: 266 }
+];
+
+const mockTenantData = [
+  { id: 1, name: 'Emirates NBD', sector: 'Banking', leaseEnd: '2026-12-31', churnRisk: 'Low', rentAmount: 45.2 },
+  { id: 2, name: 'HSBC Middle East', sector: 'Banking', leaseEnd: '2025-06-30', churnRisk: 'Medium', rentAmount: 38.7 },
+  { id: 3, name: 'Goldman Sachs', sector: 'Investment Banking', leaseEnd: '2024-12-31', churnRisk: 'High', rentAmount: 52.1 },
+  { id: 4, name: 'Deloitte ME', sector: 'Consulting', leaseEnd: '2027-03-31', churnRisk: 'Low', rentAmount: 29.8 },
+  { id: 5, name: 'PwC Dubai', sector: 'Consulting', leaseEnd: '2025-09-30', churnRisk: 'Medium', rentAmount: 31.5 }
+];
+
+const mockBuildingData = [
+  { id: 1, name: 'Gate Village 1', lat: 25.2084, lng: 55.2719, occupancy: 92, value: 450 },
+  { id: 2, name: 'Gate Village 3', lat: 25.2079, lng: 55.2725, occupancy: 88, value: 380 },
+  { id: 3, name: 'Index Tower', lat: 25.2089, lng: 55.2710, occupancy: 95, value: 620 },
+  { id: 4, name: 'Liberty House', lat: 25.2075, lng: 55.2730, occupancy: 82, value: 290 },
+  { id: 5, name: 'The Exchange', lat: 25.2082, lng: 55.2715, occupancy: 90, value: 520 }
+];
+
+const mockComplianceData = [
+  { id: 1, building: 'Index Tower', type: 'Lease Contract', status: 'Valid', expiry: '2026-05-01' },
+  { id: 2, building: 'Gate Village 1', type: 'Fire Inspection', status: 'Expiring Soon', expiry: '2024-07-15' },
+  { id: 3, building: 'Liberty House', type: 'Insurance', status: 'Expired', expiry: '2023-11-01' },
+  { id: 4, building: 'The Exchange', type: 'ESG Certificate', status: 'Valid', expiry: '2025-10-30' }
+];
+
+const getStatusClass = (status) => {
+  switch (status) {
+    case 'Valid': return 'bg-green-100 text-green-800';
+    case 'Expiring Soon': return 'bg-yellow-100 text-yellow-800';
+    case 'Expired': return 'bg-red-100 text-red-800';
+    default: return 'bg-gray-100 text-gray-800';
+  }
+};
+
+const ComplianceDocuments = () => {
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold text-gray-900">Documents & Compliance</h1>
+
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase">Building</th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase">Document Type</th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase">Expiry Date</th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {mockComplianceData.map(doc => (
+                <tr key={doc.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4">{doc.building}</td>
+                  <td className="px-6 py-4">{doc.type}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(doc.status)}`}>
+                      {doc.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">{new Date(doc.expiry).toLocaleDateString()}</td>
+                  <td className="px-6 py-4 space-x-2">
+                    <button className="text-blue-600 hover:text-blue-800 text-sm">View</button>
+                    <button className="text-green-600 hover:text-green-800 text-sm">Renew</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+// Utility Components
+const KpiCard = ({ title, value, suffix, icon: Icon, trend, trendValue, color = "blue" }) => {
+  const colorClasses = {
+    blue: "border-blue-200 bg-blue-50",
+    green: "border-green-200 bg-green-50",
+    purple: "border-purple-200 bg-purple-50",
+    orange: "border-orange-200 bg-orange-50"
+  };
+
+  const iconColors = {
+    blue: "text-blue-600",
+    green: "text-green-600",
+    purple: "text-purple-600",
+    orange: "text-orange-600"
+  };
+
+  return (
+    <div className={`rounded-xl border-2 ${colorClasses[color]} p-6 transition-all hover:shadow-lg`}>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-600">{title}</p>
+          <p className="text-3xl font-bold text-gray-900 mt-2">
+            {value}{suffix}
+          </p>
+          {trend && (
+            <div className={`flex items-center mt-2 text-sm ${trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
+              <TrendingUp className="w-4 h-4 mr-1" />
+              {trendValue}% vs last month
+            </div>
+          )}
+        </div>
+        <div className={`p-3 rounded-full ${colorClasses[color]}`}>
+          <Icon className={`w-8 h-8 ${iconColors[color]}`} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const FilterBar = ({ filters, activeFilter, onFilterChange }) => {
+  return (
+    <div className="flex items-center space-x-4 bg-white p-4 rounded-xl border border-gray-200">
+      <Filter className="w-5 h-5 text-gray-500" />
+      <span className="text-sm font-medium text-gray-700">Filter by:</span>
+      <select 
+        value={activeFilter} 
+        onChange={(e) => onFilterChange(e.target.value)}
+        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+      >
+        {filters.map(filter => (
+          <option key={filter.value} value={filter.value}>{filter.label}</option>
+        ))}
+      </select>
+    </div>
+  );
+};
+
+// Navigation Components
+const Sidebar = () => {
+  const location = useLocation();
+  
+  const navItems = [
+    { path: '/', icon: Home, label: 'Dashboard' },
+    { path: '/forecast', icon: TrendingUp, label: 'Forecast' },
+    { path: '/esg', icon: Leaf, label: 'ESG Simulator' },
+    { path: '/map', icon: Map, label: 'Map View' },
+    { path: '/tenants', icon: Users, label: 'Tenant Intelligence' },
+    { path: '/compliance', icon: FileText, label: 'Compliance Docs' }
+
+  ];
+
+  return (
+    <div className="w-64 bg-slate-900 text-white h-screen fixed left-0 top-0 z-10">
+      <div className="p-6">
+        <div className="flex items-center space-x-3">
+          <Building2 className="w-8 h-8 text-blue-400" />
+          <div>
+            <h1 className="text-lg font-bold">DIFC Cognitive</h1>
+            <p className="text-sm text-slate-400">Real Estate OS</p>
+          </div>
+        </div>
+      </div>
+      
+      <nav className="mt-8">
+        {navItems.map(({ path, icon: Icon, label }) => (
+          <Link
+            key={path}
+            to={path}
+            className={`flex items-center space-x-3 px-6 py-3 text-sm font-medium transition-colors ${
+              location.pathname === path
+                ? 'bg-blue-600 text-white border-r-4 border-blue-400'
+                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+            }`}
+          >
+            <Icon className="w-5 h-5" />
+            <span>{label}</span>
+          </Link>
+        ))}
+      </nav>
+    </div>
+  );
+};
+
+const Topbar = () => {
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  return (
+    <div className="h-16 bg-white border-b border-gray-200 fixed top-0 right-0 left-64 z-20">
+      <div className="flex items-center justify-between h-full px-6">
+        <div className="flex items-center space-x-4">
+          <h1 className="text-xl font-semibold text-gray-900">Chief Real Estate Officer Portal</h1>
+        </div>
+        
+        <div className="flex items-center space-x-4">
+          <button className="p-2 text-gray-500 hover:text-gray-700 relative">
+            <Bell className="w-6 h-6" />
+            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+          </button>
+          
+          <div className="relative">
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100"
+            >
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                <User className="w-5 h-5 text-white" />
+              </div>
+              <ChevronDown className="w-4 h-4 text-gray-500" />
+            </button>
+            
+            {showUserMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200">
+                <div className="py-2">
+                  <div className="px-4 py-2 border-b border-gray-100">
+                    <p className="text-sm font-medium">Ahmed Al Mansouri</p>
+                    <p className="text-xs text-gray-500">Chief Real Estate Officer</p>
+                  </div>
+                  <button className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full">
+                    <Settings className="w-4 h-4" />
+                    <span>Settings</span>
+                  </button>
+                  <button className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full">
+                    <LogOut className="w-4 h-4" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Page Components
+const Dashboard = () => {
+  const [activeFilter, setActiveFilter] = useState('2024');
+  
+  const filters = [
+    { value: '2024', label: '2024' },
+    { value: '2023', label: '2023' },
+    { value: 'office', label: 'Office Buildings' },
+    { value: 'retail', label: 'Retail Spaces' }
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-900">Portfolio Dashboard</h1>
+        <FilterBar filters={filters} activeFilter={activeFilter} onFilterChange={setActiveFilter} />
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <KpiCard
+          title="Occupancy Rate"
+          value={mockKpiData.occupancyRate}
+          suffix="%"
+          icon={Building2}
+          trend="up"
+          trendValue="2.3"
+          color="blue"
+        />
+        <KpiCard
+          title="Monthly Rental Income"
+          value={mockKpiData.rentalIncome}
+          suffix="M AED"
+          icon={DollarSign}
+          trend="up"
+          trendValue="5.7"
+          color="green"
+        />
+        <KpiCard
+          title="Total Asset Value"
+          value={mockKpiData.assetValue}
+          suffix="M AED"
+          icon={TrendingUp}
+          trend="up"
+          trendValue="8.2"
+          color="purple"
+        />
+        <KpiCard
+          title="ESG Score"
+          value={mockKpiData.esgScore}
+          suffix="/100"
+          icon={Leaf}
+          trend="up"
+          trendValue="3.1"
+          color="orange"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
+          <h3 className="text-lg font-semibold mb-4">Occupancy Trends</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={mockForecastData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Line type="monotone" dataKey="actual" stroke="#3B82F6" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
+          <h3 className="text-lg font-semibold mb-4">Revenue by Building Type</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={[
+              { type: 'Grade A Office', revenue: 180 },
+              { type: 'Grade B Office', revenue: 120 },
+              { type: 'Retail', revenue: 85 },
+              { type: 'Mixed Use', revenue: 65 }
+            ]}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="type" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="revenue" fill="#10B981" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Forecast = () => {
+  const [forecastData, setForecastData] = useState(mockForecastData);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const runForecast = () => {
+    setIsLoading(true);
+    // TODO: Connect to AI forecasting backend
+    setTimeout(() => {
+      const newData = mockForecastData.map(item => ({
+        ...item,
+        predicted: item.predicted ? item.predicted + Math.random() * 10 - 5 : item.predicted
+      }));
+      setForecastData(newData);
+      setIsLoading(false);
+    }, 2000);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-900">Revenue Forecasting</h1>
+        <button
+          onClick={runForecast}
+          disabled={isLoading}
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center space-x-2"
+        >
+          <TrendingUp className="w-5 h-5" />
+          <span>{isLoading ? 'Running AI Forecast...' : 'Run Forecast'}</span>
+        </button>
+      </div>
+
+      <div className="bg-white p-6 rounded-xl border border-gray-200">
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold">12-Month Revenue Projection</h3>
+          <p className="text-gray-600">AI-powered forecasting using market trends and portfolio data</p>
+        </div>
+        
+        <ResponsiveContainer width="100%" height={400}>
+          <LineChart data={forecastData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="month" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Line 
+              type="monotone" 
+              dataKey="actual" 
+              stroke="#3B82F6" 
+              strokeWidth={3}
+              name="Actual Revenue (M AED)"
+            />
+            <Line 
+              type="monotone" 
+              dataKey="predicted" 
+              stroke="#10B981" 
+              strokeWidth={3}
+              strokeDasharray="5 5"
+              name="Predicted Revenue (M AED)"
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
+          <h4 className="font-semibold text-gray-900 mb-3">Key Insights</h4>
+          <ul className="space-y-2 text-sm text-gray-600">
+            <li>• 8.2% projected growth over 12 months</li>
+            <li>• Seasonal peak expected in Q4 2024</li>
+            <li>• New tenant acquisitions driving growth</li>
+          </ul>
+        </div>
+        
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
+          <h4 className="font-semibold text-gray-900 mb-3">Risk Factors</h4>
+          <ul className="space-y-2 text-sm text-gray-600">
+            <li>• Market volatility: Medium</li>
+            <li>• Lease renewal risk: 12%</li>
+            <li>• Economic sensitivity: High</li>
+          </ul>
+        </div>
+        
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
+          <h4 className="font-semibold text-gray-900 mb-3">Recommendations</h4>
+          <ul className="space-y-2 text-sm text-gray-600">
+            <li>• Focus on tenant retention</li>
+            <li>• Consider rent optimization</li>
+            <li>• Diversify tenant mix</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ESGSimulator = () => {
+  const [formData, setFormData] = useState({
+    buildingType: 'office',
+    buildingAge: 10,
+    currentCO2: 150,
+    retrofitType: 'led-hvac'
+  });
+  
+  const [results, setResults] = useState(null);
+
+  const runSimulation = () => {
+    // TODO: Connect to ESG calculation backend
+    const co2Reduction = Math.round(formData.currentCO2 * 0.35);
+    const retrofitCost = formData.buildingAge > 15 ? 2.5 : 1.8;
+    const annualSavings = co2Reduction * 0.12;
+    const roi = (annualSavings / retrofitCost) * 100;
+
+    setResults({
+      co2Saved: co2Reduction,
+      retrofitCost: retrofitCost,
+      annualSavings: annualSavings,
+      roi: roi,
+      paybackPeriod: Math.round(retrofitCost / annualSavings * 10) / 10
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold text-gray-900">ESG Impact Simulator</h1>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
+          <h3 className="text-lg font-semibold mb-4">Building Parameters</h3>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Building Type</label>
+              <select
+                value={formData.buildingType}
+                onChange={(e) => setFormData({...formData, buildingType: e.target.value})}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="office">Office Building</option>
+                <option value="retail">Retail Space</option>
+                <option value="mixed">Mixed Use</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Building Age (years)</label>
+              <input
+                type="number"
+                value={formData.buildingAge}
+                onChange={(e) => setFormData({...formData, buildingAge: parseInt(e.target.value)})}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Current CO2 Emissions (tons/year)</label>
+              <input
+                type="number"
+                value={formData.currentCO2}
+                onChange={(e) => setFormData({...formData, currentCO2: parseInt(e.target.value)})}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Retrofit Package</label>
+              <select
+                value={formData.retrofitType}
+                onChange={(e) => setFormData({...formData, retrofitType: e.target.value})}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="led-hvac">LED + HVAC Optimization</option>
+                <option value="full-retrofit">Full Energy Retrofit</option>
+                <option value="solar">Solar + Storage</option>
+              </select>
+            </div>
+
+            <button
+              onClick={runSimulation}
+              className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center space-x-2"
+            >
+              <Zap className="w-5 h-5" />
+              <span>Run ESG Simulation</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
+          <h3 className="text-lg font-semibold mb-4">Impact Results</h3>
+          
+          {results ? (
+            <div className="space-y-4">
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Leaf className="w-5 h-5 text-green-600" />
+                  <span className="font-medium text-green-800">Environmental Impact</span>
+                </div>
+                <p className="text-2xl font-bold text-green-700">{results.co2Saved} tons CO2/year</p>
+                <p className="text-sm text-green-600">Carbon emissions reduced</p>
+              </div>
+
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center space-x-2 mb-2">
+                  <DollarSign className="w-5 h-5 text-blue-600" />
+                  <span className="font-medium text-blue-800">Financial Impact</span>
+                </div>
+                <p className="text-2xl font-bold text-blue-700">{results.roi.toFixed(1)}% ROI</p>
+                <p className="text-sm text-blue-600">Return on investment</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center">
+                  <p className="text-lg font-bold text-gray-900">{results.retrofitCost}M AED</p>
+                  <p className="text-sm text-gray-600">Retrofit Cost</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-gray-900">{results.paybackPeriod} years</p>
+                  <p className="text-sm text-gray-600">Payback Period</p>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-gray-200">
+                <h4 className="font-medium text-gray-900 mb-2">Additional Benefits</h4>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>• Improved LEED certification potential</li>
+                  <li>• Enhanced tenant satisfaction</li>
+                  <li>• Reduced operational costs</li>
+                  <li>• Higher property valuation</li>
+                </ul>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center text-gray-500 py-12">
+              <Leaf className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+              <p>Run simulation to see ESG impact results</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const MapView = () => {
+  const [selectedBuilding, setSelectedBuilding] = useState(null);
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold text-gray-900">DIFC Portfolio Map</h1>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-xl border border-gray-200 h-96 relative overflow-hidden">
+            {/* Simplified map mockup */}
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-blue-100">
+              <div className="absolute inset-4 bg-white rounded-lg shadow-inner">
+                <div className="p-4 text-center text-gray-500">
+                  <Map className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                  <p className="font-medium">Interactive DIFC Map</p>
+                  <p className="text-sm">Click on building markers to view details</p>
+                  {/* TODO: Integrate with Mapbox or Leaflet */}
+                </div>
+                
+                {/* Mock building markers */}
+                {mockBuildingData.map((building, index) => (
+                  <button
+                    key={building.id}
+                    onClick={() => setSelectedBuilding(building)}
+                    className={`absolute w-6 h-6 rounded-full transform -translate-x-1/2 -translate-y-1/2 transition-all hover:scale-110 ${
+                      building.occupancy > 90 ? 'bg-green-500' : 
+                      building.occupancy > 80 ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}
+                    style={{
+                      left: `${20 + index * 15}%`,
+                      top: `${30 + (index % 2) * 20}%`
+                    }}
+                  >
+                    <span className="sr-only">{building.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="bg-white p-6 rounded-xl border border-gray-200">
+            <h3 className="text-lg font-semibold mb-4">Building Details</h3>
+            
+            {selectedBuilding ? (
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium text-gray-900">{selectedBuilding.name}</h4>
+                  <p className="text-sm text-gray-600">Premium Office Building</p>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Occupancy Rate</span>
+                    <span className="font-medium">{selectedBuilding.occupancy}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Asset Value</span>
+                    <span className="font-medium">{selectedBuilding.value}M AED</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Status</span>
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      selectedBuilding.occupancy > 90 ? 'bg-green-100 text-green-800' :
+                      selectedBuilding.occupancy > 80 ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {selectedBuilding.occupancy > 90 ? 'Excellent' :
+                       selectedBuilding.occupancy > 80 ? 'Good' : 'Needs Attention'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center text-gray-500 py-8">
+                <Building2 className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p>Click on a building marker to view details</p>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white p-6 rounded-xl border border-gray-200">
+            <h3 className="text-lg font-semibold mb-4">Portfolio Summary</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Total Buildings</span>
+                <span className="font-medium">{mockBuildingData.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Avg Occupancy</span>
+                <span className="font-medium">
+                  {Math.round(mockBuildingData.reduce((acc, b) => acc + b.occupancy, 0) / mockBuildingData.length)}%
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Total Value</span>
+                <span className="font-medium">
+                  {mockBuildingData.reduce((acc, b) => acc + b.value, 0)}M AED
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TenantIntelligence = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('name');
+  const [filteredTenants, setFilteredTenants] = useState(mockTenantData);
+
+  useEffect(() => {
+    let filtered = mockTenantData.filter(tenant =>
+      tenant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      tenant.sector.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    filtered.sort((a, b) => {
+      if (sortBy === 'name') return a.name.localeCompare(b.name);
+      if (sortBy === 'rent') return b.rentAmount - a.rentAmount;
+      if (sortBy === 'leaseEnd') return new Date(a.leaseEnd) - new Date(b.leaseEnd);
+      return 0;
+    });
+
+    setFilteredTenants(filtered);
+  }, [searchTerm, sortBy]);
+
+  const getRiskColor = (risk) => {
+    switch (risk) {
+      case 'Low': return 'bg-green-100 text-green-800';
+      case 'Medium': return 'bg-yellow-100 text-yellow-800';
+      case 'High': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-900">Tenant Intelligence</h1>
+        <div className="flex items-center space-x-4">
+          <div className="relative">
+            <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search tenants..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="name">Sort by Name</option>
+            <option value="rent">Sort by Rent</option>
+            <option value="leaseEnd">Sort by Lease End</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+        <div className="bg-white p-4 rounded-xl border border-gray-200 text-center">
+          <p className="text-2xl font-bold text-blue-600">{mockTenantData.length}</p>
+          <p className="text-sm text-gray-600">Total Tenants</p>
+        </div>
+        <div className="bg-white p-4 rounded-xl border border-gray-200 text-center">
+          <p className="text-2xl font-bold text-green-600">
+            {mockTenantData.filter(t => t.churnRisk === 'Low').length}
+          </p>
+          <p className="text-sm text-gray-600">Low Risk</p>
+        </div>
+        <div className="bg-white p-4 rounded-xl border border-gray-200 text-center">
+          <p className="text-2xl font-bold text-yellow-600">
+            {mockTenantData.filter(t => t.churnRisk === 'Medium').length}
+          </p>
+          <p className="text-sm text-gray-600">Medium Risk</p>
+        </div>
+        <div className="bg-white p-4 rounded-xl border border-gray-200 text-center">
+          <p className="text-2xl font-bold text-red-600">
+            {mockTenantData.filter(t => t.churnRisk === 'High').length}
+          </p>
+          <p className="text-sm text-gray-600">High Risk</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                  Tenant
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                  Sector
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                  Rent (M AED)
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                  Lease End
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                  Churn Risk
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredTenants.map((tenant) => (
+                <tr key={tenant.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="font-medium text-gray-900">{tenant.name}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-500">{tenant.sector}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{tenant.rentAmount}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center text-sm text-gray-500">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      {new Date(tenant.leaseEnd).toLocaleDateString()}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRiskColor(tenant.churnRisk)}`}>
+                      {tenant.churnRisk}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button className="text-blue-600 hover:text-blue-900 mr-3">
+                      View Details
+                    </button>
+                    <button className="text-green-600 hover:text-green-900">
+                      Renew Lease
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Tenant Insights Panel */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
+          <h3 className="text-lg font-semibold mb-4">Lease Expiration Timeline</h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <AlertTriangle className="w-5 h-5 text-red-500" />
+                <span className="font-medium">Expiring in 6 months</span>
+              </div>
+              <span className="text-sm font-medium text-red-700">1 tenant</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <Calendar className="w-5 h-5 text-yellow-500" />
+                <span className="font-medium">Expiring in 12 months</span>
+              </div>
+              <span className="text-sm font-medium text-yellow-700">2 tenants</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <CheckCircle className="w-5 h-5 text-green-500" />
+                <span className="font-medium">Long-term secure</span>
+              </div>
+              <span className="text-sm font-medium text-green-700">2 tenants</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
+          <h3 className="text-lg font-semibold mb-4">Sector Distribution</h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={[
+              { sector: 'Banking', count: 2, revenue: 83.9 },
+              { sector: 'Consulting', count: 2, revenue: 61.3 },
+              { sector: 'Investment', count: 1, revenue: 52.1 }
+            ]}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="sector" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="revenue" fill="#3B82F6" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Main App Component
+const App = () => {
+  return (
+    <Router>
+      <div className="min-h-screen bg-gray-50">
+        <Sidebar />
+        <Topbar />
+        
+        <main className="ml-64 pt-16 p-6">
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/forecast" element={<Forecast />} />
+            <Route path="/esg" element={<ESGSimulator />} />
+            <Route path="/map" element={<MapView />} />
+            <Route path="/tenants" element={<TenantIntelligence />} />
+            <Route path="/compliance" element={<ComplianceDocuments />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
+  );
+};
+
+export default App;
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { Search, Building, TrendingUp, Leaf, Map, Users, FileText, Settings, Moon, Sun, Download, Filter, Eye, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+
+// Mock Data
+const mockKPIs = {
+  occupancyRate: 94.2,
+  rentalIncome: 285.7,
+  assetValue: 2700,
+  esgScore: 87
+};
+
+const mockForecastData = [
+  { month: 'Jan 2025', rent: 285, predicted: 288 },
+  { month: 'Feb 2025', rent: 289, predicted: 295 },
+  { month: 'Mar 2025', rent: 293, predicted: 302 },
+  { month: 'Apr 2025', rent: 298, predicted: 308 },
+  { month: 'May 2025', rent: 305, predicted: 315 },
+  { month: 'Jun 2025', rent: 312, predicted: 322 }
+];
+
+const mockTenants = [
+  { id: 1, name: 'Goldman Sachs', sector: 'Investment Banking', leaseEnd: '2026-03-15', churnProbability: 12, revenue: 45.2 },
+  { id: 2, name: 'HSBC Middle East', sector: 'Commercial Banking', leaseEnd: '2025-08-30', churnProbability: 28, revenue: 38.7 },
+  { id: 3, name: 'McKinsey & Company', sector: 'Consulting', leaseEnd: '2027-01-20', churnProbability: 8, revenue: 22.5 },
+  { id: 4, name: 'Standard Chartered', sector: 'Banking', leaseEnd: '2025-12-10', churnProbability: 35, revenue: 41.8 },
+  { id: 5, name: 'EY Middle East', sector: 'Professional Services', leaseEnd: '2026-06-05', churnProbability: 15, revenue: 28.3 }
+];
+
+const mockProperties = [
+  { id: 1, name: 'Gate Tower', lat: 25.2285, lng: 55.2830, occupancy: 96, value: 450, type: 'Office' },
+  { id: 2, name: 'Index Tower', lat: 25.2275, lng: 55.2825, occupancy: 92, value: 380, type: 'Mixed Use' },
+  { id: 3, name: 'Liberty House', lat: 25.2295, lng: 55.2835, occupancy: 89, value: 220, type: 'Office' },
+  { id: 4, name: 'Emirates Financial Towers', lat: 25.2305, lng: 55.2840, occupancy: 98, value: 520, type: 'Office' }
+];
+
+const mockDocuments = [
+  { id: 1, name: 'Gate Tower - Fire Safety Certificate', type: 'Safety', building: 'Gate Tower', status: 'Valid', expiryDate: '2025-12-15', daysToExpiry: 198 },
+  { id: 2, name: 'HSBC Lease Agreement', type: 'Lease', building: 'Index Tower', status: 'Valid', expiryDate: '2025-08-30', daysToExpiry: 91 },
+  { id: 3, name: 'ESG Compliance Report Q1', type: 'ESG', building: 'All Buildings', status: 'Expired', expiryDate: '2025-04-30', daysToExpiry: -31 },
+  { id: 4, name: 'Building Insurance Policy', type: 'Insurance', building: 'Liberty House', status: 'Expiring Soon', expiryDate: '2025-06-15', daysToExpiry: 15 },
+  { id: 5, name: 'Structural Inspection Report', type: 'Inspection', building: 'Emirates Financial Towers', status: 'Valid', expiryDate: '2026-03-20', daysToExpiry: 293 }
+];
+
+// Utility Components
+const KpiCard = ({ title, value, unit, change, icon: Icon, color = 'blue' }) => {
+  const colorClasses = {
+    blue: 'bg-blue-500',
+    green: 'bg-green-500',
+    purple: 'bg-purple-500',
+    orange: 'bg-orange-500'
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`p-3 rounded-lg ${colorClasses[color]} text-white`}>
+          <Icon size={24} />
+        </div>
+        {change && (
+          <span className={`text-sm font-medium ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {change >= 0 ? '+' : ''}{change}%
+          </span>
+        )}
+      </div>
+      <h3 className="text-gray-600 text-sm font-medium mb-1">{title}</h3>
+      <p className="text-3xl font-bold text-gray-900">
+        {value}
+        <span className="text-lg text-gray-500 ml-1">{unit}</span>
+      </p>
+    </div>
+  );
+};
+
+const FilterDropdown = ({ label, options, value, onChange }) => (
+  <div className="flex flex-col">
+    <label className="text-sm font-medium text-gray-700 mb-1">{label}</label>
+    <select 
+      value={value} 
+      onChange={(e) => onChange(e.target.value)}
+      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+    >
+      {options.map(option => (
+        <option key={option.value} value={option.value}>{option.label}</option>
+      ))}
+    </select>
+  </div>
+);
+
+// Layout Components
+const Sidebar = ({ darkMode }) => {
+  const location = useLocation();
+  
+  const menuItems = [
+    { path: '/dashboard', icon: Building, label: 'Dashboard' },
+    { path: '/forecast', icon: TrendingUp, label: 'Forecast Analytics' },
+    { path: '/esg-simulator', icon: Leaf, label: 'ESG Simulator' },
+    { path: '/map', icon: Map, label: 'Property Map' },
+    { path: '/tenants', icon: Users, label: 'Tenant Intelligence' },
+    { path: '/documents', icon: FileText, label: 'Documents & Compliance' }
+  ];
+
+  return (
+    <div className={`w-64 h-screen ${darkMode ? 'bg-gray-900' : 'bg-white'} border-r border-gray-200 flex flex-col`}>
+      <div className="p-6 border-b border-gray-200">
+        <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+          DIFC Real Estate OS
+        </h1>
+        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>
+          Cognitive Portfolio Management
+        </p>
+      </div>
+      
+      <nav className="flex-1 p-4">
+        {menuItems.map(({ path, icon: Icon, label }) => (
+          <Link
+            key={path}
+            to={path}
+            className={`flex items-center px-4 py-3 mb-2 rounded-lg transition-colors ${
+              location.pathname === path
+                ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                : `${darkMode ? 'text-gray-300 hover:bg-gray-800' : 'text-gray-700 hover:bg-gray-100'}`
+            }`}
+          >
+            <Icon size={20} className="mr-3" />
+            {label}
+          </Link>
+        ))}
+      </nav>
+    </div>
+  );
+};
+
+const Navbar = ({ darkMode, toggleDarkMode, pageTitle }) => (
+  <div className={`h-16 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'} border-b flex items-center justify-between px-6`}>
+    <h2 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+      {pageTitle}
+    </h2>
+    
+    <div className="flex items-center space-x-4">
+      <button
+        onClick={toggleDarkMode}
+        className={`p-2 rounded-lg ${darkMode ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-600'} hover:opacity-80`}
+      >
+        {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+      </button>
+      
+      <div className="flex items-center space-x-2">
+        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+          CRO
+        </div>
+        <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+          Chief Real Estate Officer
+        </span>
+      </div>
+    </div>
+  </div>
+);
+
+// Page Components
+const Dashboard = ({ darkMode }) => {
+  const [selectedYear, setSelectedYear] = useState('2025');
+  const [selectedType, setSelectedType] = useState('all');
+  const [selectedSector, setSelectedSector] = useState('all');
+
+  const yearOptions = [
+    { value: '2025', label: '2025' },
+    { value: '2024', label: '2024' },
+    { value: '2023', label: '2023' }
+  ];
+
+  const typeOptions = [
+    { value: 'all', label: 'All Properties' },
+    { value: 'office', label: 'Office' },
+    { value: 'retail', label: 'Retail' },
+    { value: 'mixed', label: 'Mixed Use' }
+  ];
+
+  const sectorOptions = [
+    { value: 'all', label: 'All Sectors' },
+    { value: 'banking', label: 'Banking & Finance' },
+    { value: 'consulting', label: 'Consulting' },
+    { value: 'tech', label: 'Technology' }
+  ];
+
+  // TODO: Connect backend here - filter data based on selected filters
+  const filteredKPIs = mockKPIs;
+
+  return (
+    <div className={`p-6 ${darkMode ? 'bg-gray-800' : 'bg-gray-50'} min-h-screen`}>
+      {/* Filters */}
+      <div className="mb-8 bg-white rounded-lg shadow-lg p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Portfolio Filters</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FilterDropdown
+            label="Year"
+            options={yearOptions}
+            value={selectedYear}
+            onChange={setSelectedYear}
+          />
+          <FilterDropdown
+            label="Property Type"
+            options={typeOptions}
+            value={selectedType}
+            onChange={setSelectedType}
+          />
+          <FilterDropdown
+            label="Sector Focus"
+            options={sectorOptions}
+            value={selectedSector}
+            onChange={setSelectedSector}
+          />
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <KpiCard
+          title="Portfolio Occupancy"
+          value={filteredKPIs.occupancyRate}
+          unit="%"
+          change={2.4}
+          icon={Building}
+          color="blue"
+        />
+        <KpiCard
+          title="Monthly Rental Income"
+          value={filteredKPIs.rentalIncome}
+          unit="M AED"
+          change={5.7}
+          icon={TrendingUp}
+          color="green"
+        />
+        <KpiCard
+          title="Total Asset Value"
+          value={filteredKPIs.assetValue}
+          unit="M AED"
+          change={1.2}
+          icon={Building}
+          color="purple"
+        />
+        <KpiCard
+          title="ESG Performance Score"
+          value={filteredKPIs.esgScore}
+          unit="/100"
+          change={3.1}
+          icon={Leaf}
+          color="orange"
+        />
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Trend (Last 6 Months)</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={mockForecastData.slice(0, 6)}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip formatter={(value) => [`${value}M AED`, 'Revenue']} />
+              <Line type="monotone" dataKey="rent" stroke="#3B82F6" strokeWidth={3} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Property Performance</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={mockProperties}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip formatter={(value) => [`${value}%`, 'Occupancy']} />
+              <Bar dataKey="occupancy" fill="#10B981" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ForecastAnalytics = ({ darkMode }) => {
+  const [forecastData, setForecastData] = useState(mockForecastData);
+  const [isRunning, setIsRunning] = useState(false);
+
+  const runForecast = () => {
+    setIsRunning(true);
+    // TODO: Connect backend here - call ML forecasting API
+    
+    setTimeout(() => {
+      const updatedData = mockForecastData.map(item => ({
+        ...item,
+        predicted: item.predicted + Math.random() * 20 - 10 // Simulate forecast variation
+      }));
+      setForecastData(updatedData);
+      setIsRunning(false);
+    }, 2000);
+  };
+
+  return (
+    <div className={`p-6 ${darkMode ? 'bg-gray-800' : 'bg-gray-50'} min-h-screen`}>
+      <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">Rental Revenue Forecast</h3>
+          <div className="flex space-x-3">
+            <button
+              onClick={runForecast}
+              disabled={isRunning}
+              className={`px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center space-x-2`}
+            >
+              <TrendingUp size={16} />
+              <span>{isRunning ? 'Running...' : 'Run Forecast'}</span>
+            </button>
+            <button className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center space-x-2">
+              <Download size={16} />
+              <span>Export</span>
+            </button>
+          </div>
+        </div>
+
+        <ResponsiveContainer width="100%" height={400}>
+          <LineChart data={forecastData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="month" />
+            <YAxis />
+            <Tooltip formatter={(value, name) => [`${value}M AED`, name === 'rent' ? 'Historical' : 'Predicted']} />
+            <Line type="monotone" dataKey="rent" stroke="#3B82F6" strokeWidth={2} name="Historical Revenue" />
+            <Line type="monotone" dataKey="predicted" stroke="#EF4444" strokeWidth={2} strokeDasharray="5 5" name="Predicted Revenue" />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">Forecast Summary</h4>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-gray-600">6-Month Growth</span>
+              <span className="font-semibold text-green-600">+12.4%</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Projected Revenue (Jun '25)</span>
+              <span className="font-semibold">322M AED</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Confidence Level</span>
+              <span className="font-semibold text-blue-600">87%</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">Risk Factors</h4>
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+              <span className="text-sm text-gray-700">Market Volatility</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+              <span className="text-sm text-gray-700">Lease Renewals</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-sm text-gray-700">Economic Growth</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">Model Parameters</h4>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Historical Data</span>
+              <span className="font-semibold">36 months</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Algorithm</span>
+              <span className="font-semibold">LSTM Neural Network</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Last Updated</span>
+              <span className="font-semibold">Today 09:30</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ESGSimulator = ({ darkMode }) => {
+  const [buildingType, setBuildingType] = useState('office');
+  const [buildingSize, setBuildingSize] = useState(50000);
+  const [currentEmissions, setCurrentEmissions] = useState(2500);
+  const [results, setResults] = useState(null);
+
+  const simulateRetrofit = () => {
+    // TODO: Connect backend here - call ESG simulation API
+    
+    // Mock simulation logic
+    const emissionReduction = buildingSize * 0.35; // 35% reduction per sqft
+    const retrofitCost = buildingSize * 180; // $180 per sqft
+    const annualSavings = emissionReduction * 45; // $45 per ton CO2 saved
+    const roi = (annualSavings / retrofitCost) * 100;
+    
+    setResults({
+      retrofitCost: retrofitCost / 1000000, // Convert to millions
+      carbonSaved: emissionReduction / 1000, // Convert to tons
+      roi: roi,
+      paybackPeriod: retrofitCost / annualSavings,
+      esgScoreImprovement: 15
+    });
+  };
+
+  return (
+    <div className={`p-6 ${darkMode ? 'bg-gray-800' : 'bg-gray-50'} min-h-screen`}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Input Panel */}
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6">ESG Retrofit Simulator</h3>
+          
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Building Type</label>
+              <select
+                value={buildingType}
+                onChange={(e) => setBuildingType(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="office">Office Building</option>
+                <option value="mixed">Mixed Use</option>
+                <option value="retail">Retail</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Building Size (sq ft)
+              </label>
+              <input
+                type="number"
+                value={buildingSize}
+                onChange={(e) => setBuildingSize(Number(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Current Annual Emissions (tons CO2)
+              </label>
+              <input
+                type="number"
+                value={currentEmissions}
+                onChange={(e) => setCurrentEmissions(Number(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <button
+              onClick={simulateRetrofit}
+              className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center space-x-2"
+            >
+              <Leaf size={20} />
+              <span>Run ESG Simulation</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Results Panel */}
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6">Simulation Results</h3>
+          
+          {results ? (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-blue-800 mb-1">Retrofit Cost</h4>
+                  <p className="text-2xl font-bold text-blue-900">
+                    ${results.retrofitCost.toFixed(1)}M
+                  </p>
+                </div>
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-green-800 mb-1">Carbon Saved</h4>
+                  <p className="text-2xl font-bold text-green-900">
+                    {results.carbonSaved.toFixed(0)} tons/year
+                  </p>
+                </div>
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-purple-800 mb-1">ROI</h4>
+                  <p className="text-2xl font-bold text-purple-900">
+                    {results.roi.toFixed(1)}%
+                  </p>
+                </div>
+                <div className="bg-orange-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-orange-800 mb-1">Payback Period</h4>
+                  <p className="text-2xl font-bold text-orange-900">
+                    {results.paybackPeriod.toFixed(1)} years
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="text-sm font-medium text-gray-800 mb-2">ESG Score Improvement</h4>
+                <div className="flex items-center space-x-2">
+                  <div className="flex-1 bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-green-500 h-2 rounded-full transition-all duration-1000"
+                      style={{ width: `${results.esgScoreImprovement}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-sm font-medium text-green-600">+{results.esgScoreImprovement} points</span>
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <h4 className="text-sm font-medium text-gray-800 mb-3">Recommended Actions</h4>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li className="flex items-center space-x-2">
+                    <CheckCircle size={16} className="text-green-500" />
+                    <span>LED lighting upgrade (30% energy savings)</span>
+                  </li>
+                  <li className="flex items-center space-x-2">
+                    <CheckCircle size={16} className="text-green-500" />
+                    <span>HVAC system optimization</span>
+                  </li>
+                  <li className="flex items-center space-x-2">
+                    <CheckCircle size={16} className="text-green-500" />
+                    <span>Smart building management system</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center text-gray-500 py-12">
+              <Leaf size={48} className="mx-auto mb-4 text-gray-300" />
+              <p>Run a simulation to see ESG retrofit recommendations</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const PropertyMap = ({ darkMode }) => {
+  const [selectedProperty, setSelectedProperty] = useState(null);
+
+  // Simple mock map since we can't use actual Leaflet in this environment
+  const MapView = () => (
+    <div className="relative bg-blue-50 rounded-lg h-96 overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-blue-200">
+        {/* Mock DIFC Layout */}
+        <div className="absolute top-4 left-4 bg-white p-2 rounded shadow text-xs font-medium">
+          DIFC District Map
+        </div>
+        
+        {/* Property Markers */}
+        {mockProperties.map((property, index) => (
+          <div
+            key={property.id}
+            className={`absolute w-4 h-4 bg-red-500 rounded-full cursor-pointer transform -translate-x-2 -translate-y-2 hover:scale-150 transition-transform ${
+              selectedProperty?.id === property.id ? 'ring-4 ring-blue-400' : ''
+            }`}
+            style={{
+              top: `${20 + index * 15}%`,
+              left: `${30 + index * 20}%`
+            }}
+            onClick={() => setSelectedProperty(property)}
+          />
+        ))}
+        
+        {/* Selected Property Popup */}
+        {selectedProperty && (
+          <div className="absolute top-20 right-4 bg-white p-4 rounded-lg shadow-lg w-64">
+            <h4 className="font-semibold text-gray-900 mb-2">{selectedProperty.name}</h4>
+            <div className="space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Occupancy:</span>
+                <span className="font-medium">{selectedProperty.occupancy}%</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Asset Value:</span>
+                <span className="font-medium">{selectedProperty.value}M AED</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Type:</span>
+                <span className="font-medium">{selectedProperty.type}</span>
+              </div>
+            </div>
+            <button
+              onClick={() => setSelectedProperty(null)}
+              className="mt-3 text-xs text-blue-600 hover:text-blue-800"
+            >
+              Close
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className={`p-6 ${darkMode ? 'bg-gray-800' : 'bg-gray-50'} min-h-screen`}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Map View */}
+        <div className="lg:col-span-2 bg-white rounded-lg shadow-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">DIFC Property Portfolio</h3>
+            <div className="flex space-x-2">
+              <button className="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded">Satellite</button>
+              <button className="px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded">Street</button>
+            </div>
+          </div>
+          <MapView />
+        </div>
+
+        {/* Property List */}
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Properties</h3>
+          <div className="space-y-3">
+            {mockProperties.map((property) => (
+              <div
+                key={property.id}
+                className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                  selectedProperty?.id === property.id
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+                onClick={() => setSelectedProperty(property)}
+              >
+                <h4 className="font-medium text-gray-900">{property.name}</h4>
+                <div className="mt-1 space-y-1 text-xs text-gray-600">
+                  <div className="flex justify-between">
+                    <span>Occupancy:</span>
+                    <span className={property.occupancy >= 95 ? 'text-green-600' : property.occupancy >= 85 ? 'text-yellow-600' : 'text-red-600'}>
+                      {property.occupancy}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Value:</span>
+                    <span>{property.value}M AED</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Property Analytics */}
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h4 className="text-sm font-medium text-gray-600 mb-2">Total Properties</h4>
+          <p className="text-3xl font-bold text-gray-900">{mockProperties.length}</p>
+        </div>
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h4 className="text-sm font-medium text-gray-600 mb-2">Average Occupancy</h4>
+          <p className="text-3xl font-bold text-green-600">
+            {(mockProperties.reduce((sum, p) => sum + p.occupancy, 0) / mockProperties.length).toFixed(1)}%
+          </p>
+        </div>
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h4 className="text-sm font-medium text-gray-600 mb-2">Total Portfolio Value</h4>
+          <p className="text-3xl font-bold text-blue-600">
+            {mockProperties.reduce((sum, p) => sum + p.value, 0)}M AED
+          </p>
+        </div>
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h4 className="text-sm font-medium text-gray-600 mb-2">Best Performer</h4>
+          <p className="text-lg font-bold text-purple-600">
+            {mockProperties.reduce((best, current) => current.occupancy > best.occupancy ? current : best).name}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TenantIntelligence = ({ darkMode }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortField, setSortField] = useState('name');
+  const [sortDirection, setSortDirection] = useState('asc');
+
+  const filteredTenants = mockTenants
+    .filter(tenant => 
+      tenant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      tenant.sector.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      const aVal = a[sortField];
+      const bVal = b[sortField];
+      const direction = sortDirection === 'asc' ? 1 : -1;
+      
+      if (typeof aVal === 'string') {
+        return aVal.localeCompare(bVal) * direction;
+      }
+      return (aVal - bVal) * direction;
+    });
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getChurnRiskColor = (probability) => {
+    if (probability <= 15) return 'text-green-600 bg-green-100';
+    if (probability <= 30) return 'text-yellow-600 bg-yellow-100';
+    return 'text-red-600 bg-red-100';
+  };
+
+  const getChurnRiskLabel = (probability) => {
+    if (probability <= 15) return 'Low Risk';
+    if (probability <= 30) return 'Medium Risk';
+    return 'High Risk';
+  };
+
+  return (
+    <div className={`p-6 ${darkMode ? 'bg-gray-800' : 'bg-gray-50'} min-h-screen`}>
+      {/* Header and Search */}
+      <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Tenant Intelligence Dashboard</h3>
+          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2">
+            <Download size={16} />
+            <span>Export Report</span>
+          </button>
+        </div>
+        
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <input
+            type="text"
+            placeholder="Search tenants by name or sector..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      </div>
+
+      {/* Tenant Analytics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h4 className="text-sm font-medium text-gray-600 mb-2">Total Tenants</h4>
+          <p className="text-3xl font-bold text-gray-900">{mockTenants.length}</p>
+        </div>
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h4 className="text-sm font-medium text-gray-600 mb-2">High Churn Risk</h4>
+          <p className="text-3xl font-bold text-red-600">
+            {mockTenants.filter(t => t.churnProbability > 30).length}
+          </p>
+        </div>
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h4 className="text-sm font-medium text-gray-600 mb-2">Avg Churn Risk</h4>
+          <p className="text-3xl font-bold text-yellow-600">
+            {(mockTenants.reduce((sum, t) => sum + t.churnProbability, 0) / mockTenants.length).toFixed(1)}%
+          </p>
+        </div>
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h4 className="text-sm font-medium text-gray-600 mb-2">Total Revenue</h4>
+          <p className="text-3xl font-bold text-green-600">
+            {mockTenants.reduce((sum, t) => sum + t.revenue, 0).toFixed(1)}M AED
+          </p>
+        </div>
+      </div>
+
+      {/* Tenant Table */}
+      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('name')}
+                >
+                  Tenant Name {sortField === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('sector')}
+                >
+                  Sector {sortField === 'sector' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('leaseEnd')}
+                >
+                  Lease End {sortField === 'leaseEnd' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('churnProbability')}
+                >
+                  Churn Risk {sortField === 'churnProbability' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('revenue')}
+                >
+                  Revenue {sortField === 'revenue' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredTenants.map((tenant) => (
+                <tr key={tenant.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="font-medium text-gray-900">{tenant.name}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                      {tenant.sector}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {new Date(tenant.leaseEnd).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 text-xs rounded-full ${getChurnRiskColor(tenant.churnProbability)}`}>
+                      {getChurnRiskLabel(tenant.churnProbability)} ({tenant.churnProbability}%)
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {tenant.revenue}M AED
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <button className="text-blue-600 hover:text-blue-900 mr-3">
+                      <Eye size={16} />
+                    </button>
+                    <button className="text-gray-600 hover:text-gray-900">
+                      <Settings size={16} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const DocumentsCompliance = ({ darkMode }) => {
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterType, setFilterType] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredDocuments = mockDocuments.filter(doc => {
+    const matchesStatus = filterStatus === 'all' || doc.status.toLowerCase().includes(filterStatus.toLowerCase());
+    const matchesType = filterType === 'all' || doc.type.toLowerCase() === filterType.toLowerCase();
+    const matchesSearch = doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         doc.building.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    return matchesStatus && matchesType && matchesSearch;
+  });
+
+  const getStatusIcon = (status) => {
+    switch (status.toLowerCase()) {
+      case 'valid':
+        return <CheckCircle className="text-green-500" size={16} />;
+      case 'expired':
+        return <AlertTriangle className="text-red-500" size={16} />;
+      case 'expiring soon':
+        return <Clock className="text-yellow-500" size={16} />;
+      default:
+        return <Clock className="text-gray-500" size={16} />;
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status.toLowerCase()) {
+      case 'valid':
+        return 'bg-green-100 text-green-800';
+      case 'expired':
+        return 'bg-red-100 text-red-800';
+      case 'expiring soon':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const statusCounts = mockDocuments.reduce((acc, doc) => {
+    acc[doc.status] = (acc[doc.status] || 0) + 1;
+    return acc;
+  }, {});
+
+  return (
+    <div className={`p-6 ${darkMode ? 'bg-gray-800' : 'bg-gray-50'} min-h-screen`}>
+      {/* Header */}
+      <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Documents & Compliance Dashboard</h3>
+          <div className="flex space-x-3">
+            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2">
+              <Download size={16} />
+              <span>Export Report</span>
+            </button>
+            <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+              Upload Document
+            </button>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <input
+              type="text"
+              placeholder="Search documents..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All Status</option>
+            <option value="valid">Valid</option>
+            <option value="expired">Expired</option>
+            <option value="expiring">Expiring Soon</option>
+          </select>
+
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All Types</option>
+            <option value="lease">Lease</option>
+            <option value="safety">Safety</option>
+            <option value="esg">ESG</option>
+            <option value="insurance">Insurance</option>
+            <option value="inspection">Inspection</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Status Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-medium text-gray-600 mb-1">Total Documents</h4>
+              <p className="text-3xl font-bold text-gray-900">{mockDocuments.length}</p>
+            </div>
+            <FileText className="text-blue-500" size={32} />
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-medium text-gray-600 mb-1">Valid</h4>
+              <p className="text-3xl font-bold text-green-600">{statusCounts['Valid'] || 0}</p>
+            </div>
+            <CheckCircle className="text-green-500" size={32} />
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-medium text-gray-600 mb-1">Expiring Soon</h4>
+              <p className="text-3xl font-bold text-yellow-600">{statusCounts['Expiring Soon'] || 0}</p>
+            </div>
+            <Clock className="text-yellow-500" size={32} />
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-medium text-gray-600 mb-1">Expired</h4>
+              <p className="text-3xl font-bold text-red-600">{statusCounts['Expired'] || 0}</p>
+            </div>
+            <AlertTriangle className="text-red-500" size={32} />
+          </div>
+        </div>
+      </div>
+
+      {/* Documents Table */}
+      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Document
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Type
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Building
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Expiry Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Days to Expiry
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredDocuments.map((doc) => (
+                <tr key={doc.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <FileText className="text-gray-400 mr-3" size={16} />
+                      <div className="font-medium text-gray-900">{doc.name}</div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="px-2 py-1 text-xs bg-gray-100 text-gray-800 rounded-full">
+                      {doc.type}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {doc.building}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center space-x-2">
+                      {getStatusIcon(doc.status)}
+                      <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(doc.status)}`}>
+                        {doc.status}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {new Date(doc.expiryDate).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`font-medium ${
+                      doc.daysToExpiry < 0 ? 'text-red-600' : 
+                      doc.daysToExpiry <= 30 ? 'text-yellow-600' : 'text-green-600'
+                    }`}>
+                      {doc.daysToExpiry < 0 ? `${Math.abs(doc.daysToExpiry)} days overdue` : `${doc.daysToExpiry} days`}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <div className="flex space-x-2">
+                      <button className="text-blue-600 hover:text-blue-900">
+                        <Eye size={16} />
+                      </button>
+                      <button className="text-green-600 hover:text-green-900">
+                        <Download size={16} />
+                      </button>
+                      <button className="text-gray-600 hover:text-gray-900">
+                        <Settings size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
+        {filteredDocuments.length === 0 && (
+          <div className="text-center py-12">
+            <FileText className="mx-auto text-gray-300 mb-4" size={48} />
+            <p className="text-gray-500">No documents found matching your criteria</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Main App Component
+const App = () => {
+  const [darkMode, setDarkMode] = useState(false);
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+  };
+
+  const getPageTitle = (pathname) => {
+    const titles = {
+      '/dashboard': 'Portfolio Dashboard',
+      '/forecast': 'Forecast Analytics',
+      '/esg-simulator': 'ESG Retrofit Simulator',
+      '/map': 'Interactive Property Map',
+      '/tenants': 'Tenant Intelligence',
+      '/documents': 'Documents & Compliance'
+    };
+    return titles[pathname] || 'DIFC Real Estate OS';
+  };
+
+  return (
+    <Router>
+      <div className={`flex h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
+        <Sidebar darkMode={darkMode} />
+        
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={
+              <>
+                <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} pageTitle="Portfolio Dashboard" />
+                <div className="flex-1 overflow-auto">
+                  <Dashboard darkMode={darkMode} />
+                </div>
+              </>
+            } />
+            <Route path="/forecast" element={
+              <>
+                <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} pageTitle="Forecast Analytics" />
+                <div className="flex-1 overflow-auto">
+                  <ForecastAnalytics darkMode={darkMode} />
+                </div>
+              </>
+            } />
+            <Route path="/esg-simulator" element={
+              <>
+                <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} pageTitle="ESG Retrofit Simulator" />
+                <div className="flex-1 overflow-auto">
+                  <ESGSimulator darkMode={darkMode} />
+                </div>
+              </>
+            } />
+            <Route path="/map" element={
+              <>
+                <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} pageTitle="Interactive Property Map" />
+                <div className="flex-1 overflow-auto">
+                  <PropertyMap darkMode={darkMode} />
+                </div>
+              </>
+            } />
+            <Route path="/tenants" element={
+              <>
+                <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} pageTitle="Tenant Intelligence" />
+                <div className="flex-1 overflow-auto">
+                  <TenantIntelligence darkMode={darkMode} />
+                </div>
+              </>
+            } />
+            <Route path="/documents" element={
+              <>
+                <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} pageTitle="Documents & Compliance" />
+                <div className="flex-1 overflow-auto">
+                  <DocumentsCompliance darkMode={darkMode} />
+                </div>
+              </>
+            } />
+          </Routes>
+        </div>
+      </div>
+    </Router>
+  );
+};
+
+export default App;
