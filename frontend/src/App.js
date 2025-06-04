@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { Search, Filter, MapPin, Users, TrendingUp, Leaf, FileText, Settings, Bell, User, ChevronDown, Calendar, DollarSign, Building, Activity, Download, Eye, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import logo from './logo.png'; // Assuming you have a logo image in the same directory
 
+<img src={logo} className="App-logo" alt="logo" />
 // Mock Data
 const mockKPIData = {
   occupancy: 87.5,
